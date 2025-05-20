@@ -73,16 +73,10 @@ def upload_images_to_pinecone():
                 "values": embedding,
                 "metadata": {"label": label}
             })
-            print(f"Embedded: {vector_id}")
-        else:
-            print(f"Skipped: {image_path}")
 
     if vectors:
-        print(f"\nUploading {len(vectors)} vectors to Pinecone...")
         index.upsert(vectors=vectors)
         print("Upload complete.")
-    else:
-        print("No valid embeddings to upload.")
 
 if __name__ == "__main__":
     upload_images_to_pinecone()
