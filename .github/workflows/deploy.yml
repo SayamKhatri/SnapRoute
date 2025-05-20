@@ -33,16 +33,19 @@ jobs:
       - name: Build & push Docker image
         working-directory: lambda
         run: |
-          # ensure buildx is set up
+          # 1. ensure buildx is set up
           docker buildx create --use --name buildx_builder || true
           docker buildx inspect --bootstrap
 
-          # build for linux/amd64 and push directly, context is now `lambda/`
+          # 2. build only linux/amd64, load into local Docker
           docker buildx build \
             --platform linux/amd64 \
-            --push \
+            --load \
             -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
             .
+
+          # 3. push that single-arch image
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
 
       - name: Update Lambda function code
         run: |
