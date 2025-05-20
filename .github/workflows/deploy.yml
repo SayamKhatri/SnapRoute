@@ -1,0 +1,57 @@
+name: CI/CD - Build & Deploy SnapRoute
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  AWS_REGION: us-east-1
+  ECR_REGISTRY: 569381789706.dkr.ecr.us-east-1.amazonaws.com
+  ECR_REPOSITORY: snaproute-inference
+  IMAGE_TAG: ${{ github.sha }}
+  LAMBDA_FUNCTION_NAME: snaproute-inference
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build & push Docker image
+        working-directory: lambda
+        run: |
+          # ensure buildx is set up
+          docker buildx create --use --name buildx_builder || true
+          docker buildx inspect --bootstrap
+
+          # build for linux/amd64 and push directly, context is now `lambda/`
+          docker buildx build \
+            --platform linux/amd64 \
+            --push \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            .
+
+      - name: Update Lambda function code
+        run: |
+          aws lambda update-function-code \
+            --function-name $LAMBDA_FUNCTION_NAME \
+            --image-uri $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+
+      - name: Update Lambda configuration (env vars)
+        run: |
+          aws lambda update-function-configuration \
+            --function-name $LAMBDA_FUNCTION_NAME \
+            --environment "Variables={PINECONE_API_KEY=${{ secrets.PINECONE_API_KEY }},PINECONE_INDEX_NAME=${{ secrets.PINECONE_INDEX_NAME }},DESTINATION_BUCKET=${{ secrets.DESTINATION_BUCKET }}}"

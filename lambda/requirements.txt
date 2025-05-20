@@ -1,0 +1,5 @@
+icrawler
+boto3
+pillow
+pinecone
+python-dotenv
