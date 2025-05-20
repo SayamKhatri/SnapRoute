@@ -1,0 +1,4 @@
+icrawler
+dotenv
+pinecone
+boto3
