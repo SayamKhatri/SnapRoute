@@ -7,8 +7,8 @@ on:
 
 env:
   AWS_REGION: us-east-1
-  ECR_REGISTRY: 569381789706.dkr.ecr.us-east-1.amazonaws.com
-  ECR_REPOSITORY: snaproute-inference
+  ECR_REGISTRY: ${{ secrets.ECR_REGISTRY }}      
+  ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }} 
   IMAGE_TAG: ${{ github.sha }}
   LAMBDA_FUNCTION_NAME: snaproute
 
@@ -71,4 +71,6 @@ jobs:
         run: |
           aws lambda update-function-configuration \
             --function-name $LAMBDA_FUNCTION_NAME \
+            --memory-size 1024 \
+            --timeout 300 \
             --environment "Variables={PINECONE_API_KEY=${{ secrets.PINECONE_API_KEY }},PINECONE_INDEX_NAME=${{ secrets.PINECONE_INDEX_NAME }},DESTINATION_BUCKET=${{ secrets.DESTINATION_BUCKET }}}"
